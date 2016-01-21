@@ -1,0 +1,209 @@
+
+<head>
+  <link href='https://fonts.googleapis.com/css?family=Righteous' rel='stylesheet' type='text/css'>
+  <%= stylesheet_link_tag "gamelobbies"%>
+  <%= javascript_include_tag('welcome.js') %>
+</head>
+
+<body onLoad="preloadImages()">
+<div id="gl-wrapper">
+
+  <!-- Main Container -->
+  <div id="gl-main-container">
+
+    <!-- Header -->
+    <div id="gl-header">
+      <nav class="navbar navbar-inverse navbar-fixed-top">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header" id="gl-header-small">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#gl-header-menu-buttons" aria-expanded="false">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+
+          <div class="gl-header-inner-nav">
+            <a class="navbar-brand gl-title" href="#">CSC667 TEAM B</a>
+          </div>
+        </div>
+
+        <!-- Collect the nav links and other content for toggling -->
+        <div class="collapse navbar-collapse" id="gl-header-menu-buttons" aria-expanded="false">
+          <div class="gl-header-inner-nav">
+            <ul class="nav navbar-nav navbar-right">
+              <li>
+                <a href="/">BOMBERMAN</a>
+              </li>
+              <li>
+                <a href="#" onclick="showDevelopers()">DEVELOPERS</a>
+              </li>
+              <li>
+                <a href="#" onclick="showDisclaimer()">DISCLAIMER</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </div>
+    <!-- End Header -->
+
+    <!-- Content -->
+    <div id="dynamic-container">
+      <div id="about-main-container">
+        <div class="container-fluid">
+          <div class="row">
+
+            <!-- Su Khai's Section -->
+            <div class="col-sm-6 profile-container" style="margin-right: 10px">
+              <div class="profile-item">
+
+                <div class="profile-title">
+                  SU KHAI KOH
+                </div>
+
+                <hr/>
+
+                <div class="profile-content">
+                  <div class="left-content">
+                    <div class="profile-img" style="background-image: url(assets/profile_sukhai.png)"></div>
+                  </div>
+
+                  <div class="right-content">
+                    <ul>
+                      <li><a href="https://github.com/sukhai">GITHUB</a></li>
+                      <li><a href="https://www.linkedin.com/in/sukhai">LINKEDIN</a></li>
+                      <li><span>ROLE</span></li>
+                      <li><span>- Game lobby workflow</span></li>
+                      <li><span>- UI/Layout implementation</span></li>
+                      <li><span>- Putting components together</span></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Raymond's Section -->
+            <div class="col-sm-6 profile-container">
+              <div class="profile-item">
+
+                <div class="profile-title">
+                  RAYMOND THAI
+                </div>
+
+                <hr/>
+
+                <div class="profile-content">
+                  <div class="left-content">
+                    <div class="profile-img" style="background-image: url(assets/profile_raymond.png)"></div>
+                  </div>
+
+                  <div class="right-content">
+                    <ul>
+                      <li><a href="https://github.com/raythai">GITHUB</a></li>
+                      <li><a href="https://www.linkedin.com/in/raymond-thai-a8a729108">LINKEDIN</a></li>
+                      <li><span>ROLE</span></li>
+                      <li><span>- Chat workflow</span></li>
+                      <li><span>- Leaderboard design</span></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+
+            <!-- Suhan's Section -->
+            <div class="col-sm-6 profile-container" style="margin-right: 10px">
+              <div class="profile-item">
+
+                <div class="profile-title">
+                  SUHAN KOH
+                </div>
+
+                <hr/>
+
+                <div class="profile-content">
+                  <div class="left-content">
+                    <div class="profile-img" style="background-image: url(assets/profile_suhan.png)"></div>
+                  </div>
+
+                  <div class="right-content">
+                    <ul>
+                      <li><a href="https://github.com/suhankoh">GITHUB</a></li>
+                      <li><a href="https://www.linkedin.com/in/suhankoh">LINKEDIN</a></li>
+                      <li><span>ROLE</span></li>
+                      <li><span>- User login/Facebook login workflow</span></li>
+                      <li><span>- Chat UI/Layout implementation</span></li>
+                      <li><span>- Databases workflow</span></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Steven's Section -->
+            <div class="col-sm-6 profile-container">
+              <div class="profile-item">
+
+                <div class="profile-title">
+                  STEVEN NGUYEN
+                </div>
+
+                <hr/>
+
+                <div class="profile-content">
+                  <div class="left-content">
+                    <div class="profile-img" style="background-image: url(assets/profile_steven.png)"></div>
+                  </div>
+
+                  <div class="right-content">
+                    <ul>
+                      <li><a href="https://github.com/Stnguyenx3">GITHUB</a></li>
+                      <li><a href="https://www.linkedin.com/in/steven-nguyen-943961b9">LINKEDIN</a></li>
+                      <li><span>ROLE</span></li>
+                      <li><span>- Game design</span></li>
+                      <li><span>- Multiplayer implementation</span></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="disclaimer-main-container" style="display: none;">
+        <div class="container-fluid">
+          <div class="disclaimer-container">
+            <div class="d-title">
+              DISCLAIMER
+            </div>
+
+            <hr/>
+
+            <div class="d-content">
+              This website is meant for educational purposes only. Any resemblance to real persons, living or dead is purely coincidental. Void where prohibited. No other warranty expressed or implied. This is not an offer to sell securities. This website, and it uses of asset is owned by their respectfully owners, and we do not claim we own the property, property as in audio files, pictures, sprite sheets, and styling.
+              <br/><br/>Not recommended for children. Reproduction strictly prohibited. No solicitors.
+              <br/><br/>Subject to change without notice. Times approximate. No substitutions. Sign in or sign up or any usage of this website (http://team-b.herokuapp.com) constitutes acceptance of agreement.
+              <br/><br/>Not affiliated with the Facebook, Bomberman, Nintendo, Konami. Not responsible for direct, indirect, incidental, or consequential damages resulting from any defect, error, or failure to perform.
+              <br/><br/>Penalty for private use.
+              <br/><br/>These materials have been prepared for informational purposes only and are not legal advice. Transmission of the information is not intended to create, and receipt does not constitute, an attorney-client relationship. Internet users and online users (“YOU”) use at your own risk.
+              <br/><br/>The information contained in this transmission is individual or entity named above. If the reader of this message is not the intended recipient, you are hereby notified that any dissemination, distribution or copying of this communication is strictly prohibited.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- End Content -->
+
+  </div>
+  <!-- End Main Container -->
+
+  <!-- Footer -->
+  <div id="gl-footer">
+
+  </div>
+  <!-- End Footer -->
+</div>
+</body>

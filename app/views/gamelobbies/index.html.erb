@@ -1,0 +1,221 @@
+<div id="current-user" data-user-id="<%= current_user[:id].to_s %>" style="display: none"></div>
+
+<head>
+  <link href='https://fonts.googleapis.com/css?family=Righteous' rel='stylesheet' type='text/css'>
+  <%= stylesheet_link_tag "gamelobbies"%>
+</head>
+
+<body onLoad="preloadImages()">
+<div id="gl-wrapper">
+
+  <!-- Main Container -->
+  <div id="gl-main-container">
+    <div id="show-lobby" style="display: none;"><%= flash[:lobby_id] %></div>
+
+    <!-- Header -->
+    <div id="gl-header">
+      <nav class="navbar navbar-inverse navbar-fixed-top">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header" id="gl-header-small">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#gl-header-menu-buttons" aria-expanded="false">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+
+          <div class="gl-header-inner-nav">
+            <a class="navbar-brand gl-title" href="#">BOMBERMAN</a>
+            <div id="notice"><%= flash[:notice] %></div>
+          </div>
+        </div>
+
+        <!-- Collect the nav links and other content for toggling -->
+        <div class="collapse navbar-collapse" id="gl-header-menu-buttons" aria-expanded="false">
+          <div class="gl-header-inner-nav">
+            <ul class="nav navbar-nav navbar-right">
+              <li>
+                <a href="#" onclick="showGameLobbyList(null, true)">LOBBIES</a>
+              </li>
+              <li>
+                <a href="#" onclick="showLeaderboard(true)">LEADERBOARD</a>
+              </li>
+              <li>
+                <a href="/about.html">ABOUT US</a>
+              </li>
+              <li>
+                <%= link_to "Logout", destroy_user_session_path, method: :delete %>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </div>
+    <!-- End Header -->
+
+    <!-- Content -->
+    <div id="gl-content">
+      <div id="game-lobbies">
+
+        <!-- The jQuery will replace this section with game room -->
+        <div id="game-lobbies-content">
+          <div id="gl-content-container">
+            <div class="container-fluid">
+              <div class="gl-container-content">
+
+                <% i = 0 %>
+                <% while i < @gamelobbies.length %>
+                    <% if i % 3 == 0 %>
+
+                        <!-- Add a new row, each row can only fit 3 boxes -->
+                        <div class="row">
+                          <% j = i %>
+                          <% jend = j + 3 %>
+                          <% while j < @gamelobbies.length && j < jend %>
+
+                              <% gamelobby = @gamelobbies[j] %>
+                              <% user = gamelobby.user_list[0] %>
+                              <% user = User.find(user) %>
+                              <% thumbnail = user[:image] %>
+
+                              <% if user[:image].nil? || user[:image].to_s == "" %>
+                                  <% thumbnail = instance_url + "/assets/img_thumbnail_0.png" %>
+                                  <% user[:image] = thumbnail %>
+                                  <% user.save %>
+                              <% end %>
+
+                              <div class="col-sm-4">
+                                <div class="gl-game-item-container">
+                                  <div class="gl-title">
+                                    <%= gamelobby.lobby_name %>
+                                  </div>
+
+                                  <hr/>
+
+                                  <div class="gl-game-item">
+                                    <div class="gl-game-item-left">
+                                      <div class="img-user-thumbnail" style="background-image: url(<%= thumbnail %>)"></div>
+                                    </div>
+                                    <div class="gl-game-item-right">
+                                      <span>HOST: <%= user.name %></span>
+                                      <span><%= gamelobby.public ? "PUBLIC" : "PRIVATE" %></span>
+                                      <span><%= gamelobby.user_list.length %> / 4</span>
+                                    </div>
+                                  </div>
+
+                                  <hr/>
+
+                                  <div class="gl-game-item-footer">
+                                    <% if ! gamelobby.public %>
+                                        <button class="btn btn-gl-custom disabled">JOIN</button>
+                                    <% else %>
+                                        <button class="btn btn-gl-custom" onclick="joinGameLobby(<%= gamelobby[:id] %>, true)">JOIN</button>
+                                    <% end %>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <% j = j + 1 %>
+                          <% end %>
+                        </div>
+                    <% end %>
+
+                    <% i = i + 3 %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div id="game-lobbies-content-footer">
+            <button class="btn btn-gl-custom" data-toggle="modal" data-target="#create-game-modal">CREATE GAME</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- End Content -->
+
+    <!-- Sidebar -->
+    <div id="gl-sidebar">
+      <div id="chat-div"></div>
+    </div>
+    <!-- End Sidebar -->
+  </div>
+  <!-- End Main Container -->
+
+  <!-- Footer -->
+  <div id="gl-footer">
+
+  </div>
+  <!-- End Footer -->
+</div>
+</body>
+
+
+<!-- Create Game Modal -->
+<div id="create-game-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="createGameModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+          <span class="sr-only">Close</span>
+        </button>
+        <h4 class="modal-title" id="createGameModalLabel">
+          Create Game
+        </h4>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <form role="form">
+          <div class="form-group">
+            <label for="roomName">Room name</label>
+            <input type="text" class="form-control" id="create-game-room-name" placeholder="Enter room name" maxlength="10"/>
+          </div>
+          <div class="form-group">
+            <label for="publicprivate">Public/Private</label>
+            <br>
+            <select class="form-control" id="create-game-public-private" name="create-game-public-private">
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" onclick="showGameLobbyList(null, false)">Cancel</button>
+        <button type="button" class="btn btn-success" onclick="createGameLobby()">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Error Message Modal -->
+<div id="error-message-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="errorMessageLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+          <span class="sr-only">Close</span>
+        </button>
+        <h4 class="modal-title" id="errorMessageLabel">
+          Error
+        </h4>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body" id="error-message-data"></div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" data-dismiss="modal" onclick="showGameLobbyList(null, false)">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+

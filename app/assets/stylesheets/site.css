@@ -1,0 +1,74 @@
+root { 
+    display: block;
+}
+
+.centered{
+   text-align: center;
+}
+
+.sansSerif{
+    font-family: sans-serif;
+}
+
+  a:link, a:visited {
+  
+  
+   background-color: white;
+   color: grey;
+   text-align: center;
+   font-weight: bold;
+   text-transform: uppercase;
+   
+}
+
+ a:hover, a:active{
+  background-color: darkgrey;
+
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+li{
+   float:left;
+}
+h1{
+    text-align: center;
+    color: black;
+    
+    
+}
+
+p{
+    text-align: left;
+   
+    
+}
+button{
+    text-align: left;
+ 
+}
+
+#current{
+    background-color: white;
+} 
+
+
+
+body {
+    background-color: white;
+   top:50px;
+    
+}
+div {
+   top:25px;
+   
+}
+h2 {
+    top:25px;
+    color: black;
+}
+
+

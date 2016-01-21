@@ -1,0 +1,192 @@
+// Place all the styles related to the leaderboard controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+$colHighlight          : #f7c500;
+
+hleader {
+	font-family: 'Righteous', cursive;
+	top: 0;
+	border-radius: 25px;
+  padding: 15px; 
+  -moz-border-radius: 25px;
+  width: 50%;
+  float: right;
+  position: absolute;
+  left: -10%; /* or right 50% */
+  text-align: left;
+  font-weight: bold;
+  text-align: center;
+  margin-left:65%;
+  
+}
+
+#leaderboard {
+  font-family: 'Righteous', cursive;
+  top: 0;
+  border-radius: 25px;
+  padding: 15px; 
+  -moz-border-radius: 25px;
+  width: 50%;
+  float: right;
+  position: absolute;
+  left: -10%; /* or right 50% */
+  text-align: left;
+  font-weight: bold;
+  text-align: center;
+  margin-left:85%;
+  margin-top:10%;
+  
+}
+.scroll {
+  width: 80%;
+  height: 120%;
+  overflow: scroll;
+  margin: 1% 20% auto 9%;
+  position: absolute;
+  border-radius: 20px 20px 0 20px;
+  -moz-border-radius: 20px 20px 0 20px;
+  border: 2px solid transparent;
+
+  background: rgba(0,0,0,0.75);
+  background: -moz-linear-gradient(top, rgba(0,0,0,0.75) 0%, rgba(30,30,30,0.25) 25%, rgba(119,119,119,0.25) 100%);
+  background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(0,0,0,0.75)), color-stop(25%, rgba(30,30,30,0.25)), color-stop(100%, rgba(119,119,119,0.25)));
+  background: -webkit-linear-gradient(top, rgba(0,0,0,0.75) 0%, rgba(30,30,30,0.25) 25%, rgba(119,119,119,0.25) 100%);
+  background: -o-linear-gradient(top, rgba(0,0,0,0.75) 0%, rgba(30,30,30,0.25) 25%, rgba(119,119,119,0.25) 100%);
+  background: -ms-linear-gradient(top, rgba(0,0,0,0.75) 0%, rgba(30,30,30,0.25) 25%, rgba(119,119,119,0.25) 100%);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(30,30,30,0.25) 25%, rgba(119,119,119,0.25) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#000000', endColorstr='#777777', GradientType=0 );
+}
+#user_col{
+  text-align: left;
+ // -moz-border-radius: 25px;
+  padding: 20px;
+  border: none;
+  border-bottom: 1px solid $colHighlight;
+  background: transparent;
+ // border-style: solid;
+ // border-color: #f7c500;
+}
+#rank_col{
+  text-align: center;
+ // -moz-border-radius: 25px;
+  padding: 20px;
+  border: none;
+  border-bottom: 1px solid $colHighlight;
+//  border-style: solid;
+//  border-color: #f7c500;
+}
+#score_col{
+  text-align: center;
+ // -moz-border-radius: 25px;
+  padding: 20px;
+  border: none;
+  border-bottom: 1px solid $colHighlight;
+ // border-style: solid;
+ // border-color: #f7c500;
+}
+.userpic{
+  width: 75px;
+  height: 75px;
+  -moz-border-radius: 20px;
+  border-radius: 20px;
+  padding: 15px; 
+}
+.rank{
+  background-size: 100px 100px;
+  background-repeat: no-repeat;
+  background-position: center; 
+
+}
+.leaderboard_image{
+	background-image: url("/assets/logo_leaderboard.png");
+	width: 80px;
+	height: 80px;
+  position: absolute;
+	float: right;
+  top: 0;
+}
+.sign{
+  //background-image: url("/assets/sign.png");
+  width: 70%;
+  height: 70%;
+  position: relative; 
+  margin-top:3%;
+  margin-left:15%;
+}
+.component {
+	line-height: 1.5em;
+	margin: 0 auto;
+	padding: 2em 0 3em;
+	width: 90%;
+	max-width: 1000px;
+	overflow: hidden;
+}
+.component .filler {
+	//font-family: "Blokk", Arial, sans-serif;
+	color: #d3d3d3;
+}
+table {
+  border-collapse: collapse;
+  margin-bottom: 3em;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  border-color: transparent;
+  padding: 20px;
+  font-weight: bold;
+  font-family: 'Righteous', cursive !important;
+
+}
+.rank{
+  text-align: center;
+}
+
+.wins{
+  text-align: center;
+}
+
+td {
+  font-family: 'Righteous', cursive !important;
+}
+td.err {
+  background-color: #e992b9;
+  color: #fff;
+  font-size: 0.75em;
+  text-align: center;
+  line-height: 1;
+}
+th {
+    background-color: transparent;
+    font-weight: bold;
+    color: #fff;
+    white-space: nowrap;
+}
+tbody th {
+  background-color: transparent;
+}
+tbody tr:nth-child(2n-1) {
+  background-color: transparent;
+  transition: all .125s ease-in-out;
+    //opacity: 0.75;
+}
+tbody tr:nth-child(2n-1):hover {
+  background-color: rgba(0,0,0,0.5) !important;
+}
+tr{
+  border: none;
+  border-color: transparent;
+//  padding: 0.75em 1.5em;
+  text-align: left;
+  background-color: transparent;
+  transition: all .125s ease-in-out;
+  font-family: 'Righteous', cursive !important;
+  //  border-right-color: white;
+}
+tbody tr:hover {
+  background-color: rgba(0,0,0,0.5);
+}
+tr:active {
+  background-color: rgba(0,0,0,0.5);
+}
+

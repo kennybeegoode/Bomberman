@@ -1,0 +1,1132 @@
+<!doctype html>
+<html>
+<head>
+  <title>Game</title>
+  <link href='https://fonts.googleapis.com/css?family=Righteous' rel='stylesheet' type='text/css'>
+</head>
+<body>
+
+<div id="game-object-info"
+     data-id="<%= @data[:id] %>"
+     data-game-name="<%= @data[:game_name] %>"
+     data-channel-name="<%= @data[:channel_name] %>"
+     data-lobby-id="<%= @data[:lobby_id] %>"
+     data-user-ids="<%= @data[:user_ids] %>"
+     data-user-emails="<%= @data[:user_emails] %>"
+     data-selected-map="<%= @data[:selected_map] %>"
+     data-current-user-id="<%= current_user[:id] %>"
+     style="display: none"></div>
+
+<div id="game-wrapper">
+
+  <!-- Main Container -->
+  <div id="game-main-container">
+
+    <!-- Content -->
+    <div id="game-window-container">
+      <div id="game-window-content">
+        <!-- Game window goes here -->
+      </div>
+    </div>
+    <!-- End Content -->
+
+    <!-- Sidebar -->
+    <div id="gl-sidebar">
+      <div id="chat-div"></div>
+    </div>
+    <!-- End Sidebar -->
+  </div>
+  <!-- End Main Container -->
+
+  <!-- Footer -->
+  <div id="game-footer">
+
+  </div>
+  <!-- End Footer -->
+</div>
+
+<script src="//js.pusher.com/3.0/pusher.min.js"></script>
+<%= javascript_include_tag('jquery.ui.chatbox.js') %>
+<center>
+<script>
+
+    var gameUsers = [];
+
+    var currentGameID;
+    var currentChannelName;
+
+    var game = new Phaser.Game(544, 576, Phaser.CANVAS, 'game-window-content', { preload: preload, create: create, update: update });
+
+    var map;
+    var layer;
+
+    var mapID = 2; // Set this to integer passed in from lobby.
+
+    var explosionSound;
+    var bgm;
+
+    var soundReady = false;
+
+    var text;
+    var graveText;
+    var endGameText;
+
+    var endGameStyle;
+
+    // Players
+    var currentPlayer; // Used to update current players client
+
+    var testPlayer;
+
+    var playerOne;
+    var playerTwo;
+    var playerThree;
+    var playerFour;
+
+    var playerOneDead = false;
+    var playerTwoDead = false;;
+    var playerThreeDead = false;;
+    var playerFourDead = false;;
+
+    var currentPlayerID;
+
+    var bombs; // group
+
+    var explosionCenter;
+    var explosionTop;
+    var explosionBottom;
+    var explosionLeft;
+    var explosionRight;
+
+    var lives;
+    var graveyard = [];
+
+    var cooldownTimer;
+    var bombTimer;
+    var updateTimer;
+    var gameWinTimer;
+    var canPlaceBomb = true;
+
+    var exitButton;
+
+    // Array containing array of unbreakable tile data (x, y, newTileID, oldTileID).
+    var unbreakableTiles = [];
+
+    // Array containing array of breakable tile data (x, y, newTileID, oldTileID).
+    var breakableTiles = [];
+
+    // Array containing array of tiles broken (x, y, newTileID, oldTileID).
+    var brokenTiles = [];
+    var pusher = new Pusher('446412644b608e9db0ec');
+
+
+    /* Added by Su Khai, move this block of code to anywhere you like, Steven */
+    var GAME_ID = "gameId";
+    var PLAYER_MOVED_EVENT = "playerMoved";
+
+    /*
+    The current game record, will get it when the document is ready
+    This gameObject is a map data type, and it contains the following keys:
+     {
+        "id"           : The ID of this game in the database table
+        "game_name"    : The name of this game (same as lobby name)
+        "channel_name" : The channel this client/player is listening to
+        "lobby_id"     : The ID of the game lobby that is corresponding to this actual game
+        "users"        : A list of users that have joined this game (MIN players = 2, MAX players = 4)
+     }
+     */
+    var gameObject;
+
+    $(document).ready(function() {
+
+        gameObject = {
+            "id": $("#game-object-info").data("id"),
+            "game_name": $("#game-object-info").data("game-name"),
+            "channel_name": $("#game-object-info").data("channel-name"),
+            "lobby_id": $("#game-object-info").data("lobby-id"),
+            "user_ids": $("#game-object-info").data("user-ids"),
+            "user_emails": $("#game-object-info").data("user-emails"),
+            "selected_map": $("#game-object-info").data("selected-map")
+        };
+
+        // Delete the game lobby from the gamelobbies table
+        $.ajax({
+            type: "DELETE",
+            url: "/gamelobbies/" + gameObject["lobby_id"]
+        });
+
+        mapID = gameObject["selected_map"] + 1;
+
+        gameUsers = gameObject["user_emails"];
+        currentGameID = gameObject["id"];
+        currentChannelName = gameObject["channel_name"];
+
+        // Subscribe to channels and events
+        var channel = pusher.subscribe(gameObject["channel_name"]);
+
+        channel.bind(PLAYER_MOVED_EVENT, function(data) {
+
+            var playerData = JSON.parse(JSON.stringify(data));
+            updatePlayer(playerData.movement.user.id, playerData.movement.user.x, playerData.movement.user.y);
+
+            if (playerData.movement.user.dropped_bomb == true) {
+                updateBomb(playerData.movement.user.id, playerData.movement.user.x, playerData.movement.user.y);
+            }
+
+            if (playerData.movement.user.got_killed == true) {
+                addPlayerToGrave(playerData.movement.user.id);
+            }
+        });
+    });
+
+    $(window).bind('beforeunload', function() {
+
+        onExit();
+    });
+
+    function preload() {
+        // Create chatbox and show it
+        createChatBox(gameObject["game_name"], gameObject["channel_name"] + "_chat");
+
+        // Subscribe the player to the specific game chat channel
+        var channel = pusher.subscribe(gameObject["channel_name"] + "_chat");
+        channel.bind(CHAT_MSG_RECEIVED_EVENT, function(data) {
+            $("#chat-div").chatbox("option", "boxManager").addMsg(data["name"], data["message"]);
+
+            // Get the current user's ID
+            var userId = <%= current_user[:id].to_s %>;
+
+            // Only notify response if this receiver is not the sender
+            console.log("Sender ID: " + data["sender_id"]);
+            if (userId !== data["sender_id"]) {
+                notifyChatReceiver();
+            }
+        });
+
+        $('#ui-chatbox').css('display', 'block');
+
+        game.load.tilemap('default_map', '/assets/basicmap.json', null, Phaser.Tilemap.TILED_JSON);
+        game.load.tilemap('map_two', '/assets/maptwo.json', null, Phaser.Tilemap.TILED_JSON);
+        game.load.tilemap('map_three', '/assets/map.json', null, Phaser.Tilemap.TILED_JSON);
+		game.load.image('tiles', '/assets/gridtiles.png');
+		game.load.image('character_red', '/assets/game_character_red.png');
+		game.load.image('character_blue', '/assets/game_character_blue.png');
+		game.load.image('character_green', '/assets/game_character_green.png');
+		game.load.image('character_yellow', '/assets/game_character_yellow.png');
+		game.load.image('bomb', '/assets/bomb.png');
+		game.load.spritesheet('explosions', '/assets/explosiontiles.png', 32, 32, 11);
+        game.load.image('exit', '/assets/exit_button');
+        game.load.audio('explosion_sound', '/assets/explosion.mp3');
+        game.load.audio('bgm', '/assets/bgmusic.mp3');
+
+    }
+
+    function create() {
+
+    	// Player 1 : Red
+    	// Player 2 : Green
+    	// Player 3 : Blue
+    	// Player 4 : Yellow
+
+      	this.stage.disableVisibilityChange = true;
+
+        if (mapID == 1) {
+            map = game.add.tilemap('default_map');
+        }
+        else if (mapID == 2) {
+            map = game.add.tilemap('map_two');
+        }
+        else if (mapID == 3) {
+            map = game.add.tilemap('map_three');
+        }
+        else {
+            // Load default map.
+            map = game.add.tilemap('default_map');
+        }
+      	map.addTilesetImage('tiles', 'tiles');
+      	layer = map.createLayer('Tile Layer 1');
+
+        // Sounds used in the game.
+        explosionSound = game.add.audio('explosion_sound', 1, false);
+        bgm = game.add.audio('bgm', 1, true);
+
+        // Check to make sure sound files are ready before playing.
+        game.sound.setDecodedCallback([ explosionSound, bgm ], checkSoundReady, this);
+
+      	var style = { font: "25px 'Righteous', cursive", fill: "#fff"};
+
+        endGameStyle = { font: "50px 'Righteous', cursive", fill: "#000", backgroundColor: 'rgba(255,255,255,0.75)'};
+
+      	text = game.add.text(32, 550, "Lives : ", style);
+        graveText = game.add.text(270, 550, "Grave : ", style);
+
+      	map.setCollision(27, true, layer); // Map bouondary
+     	map.setCollision(132, true, layer); // Unbreakable block
+     	map.setCollision(135, true, layer); // Breakable block
+
+
+      	cursors = game.input.keyboard.createCursorKeys();
+      	spaceKey = game.input.keyboard.addKey(Phaser.Keyboard.SHIFT);
+
+      	cooldownTimer = game.time.create(false);
+      	cooldownTimer.loop(1000, resetCooldown, this);
+
+      	updateTimer = game.time.create(false);
+      	updateTimer.loop(100, sendMovementUpdate, this);
+      	updateTimer.start();
+
+        gameWinTimer = game.time.create(false);
+        gameWinTimer.loop(2000, gameWin, this);
+        gameWinTimer.start();
+
+      	bombs = game.add.group();
+
+      	// Add Unbreakable/breakable blocks to array
+		for (var x = 0; x < 17; x++) {
+			for (var y = 0; y < 17; y++) {
+		  		var t = map.getTile(x, y, layer, true);
+		  		var tileInfo = [x, y, 113 ,t.index];
+		  		if (t.index === 132) {
+		    		unbreakableTiles.push(tileInfo);
+		  		}
+		  		else if (t.index === 135) {
+		    		breakableTiles.push(tileInfo);
+		  		}
+			}
+		}
+
+	    // Assign current player.
+		if (currentPlayerID == 1) {
+			currentPlayer = playerOne;
+		}
+		if (currentPlayerID == 2) {
+			currentPlayer = playerTwo;
+		}
+		if (currentPlayerID == 3) {
+			currentPlayer = playerThree;
+		}
+		if (currentPlayerID == 4) {
+			currentPlayer = playerFour;
+		}
+
+      	// Initialize current player with game sprite.
+		for (var i = 0; i < 4; i++) {
+    		if (gameUsers[i] == "<%=current_user.email%>") {
+
+                var nameStyle = { font: "15px 'Righteous', cursive", fill: "#fff"};
+
+                var currentPlayerName = game.add.text(800, 800, "YOU", nameStyle);
+
+    			currentPlayerID = i+1;
+
+	    		if (currentPlayerID == 1) {
+	    			currentPlayer = game.add.sprite(32,32,'character_red');
+                    currentPlayerName.x = 2;
+                    currentPlayerName.y = -15;
+                    currentPlayer.addChild(currentPlayerName);
+	    			break;
+	    		}
+	    		if (currentPlayerID == 2) {
+	    			currentPlayer = game.add.sprite(480,32,'character_green');
+                    currentPlayerName.x = 2;
+                    currentPlayerName.y = -15;
+                    currentPlayer.addChild(currentPlayerName);
+	    			break;
+	    		}
+	    		if (currentPlayerID == 3) {
+	    			currentPlayer = game.add.sprite(32,480,'character_blue');
+                    currentPlayerName.x = 2;
+                    currentPlayerName.y = -15;
+                    currentPlayer.addChild(currentPlayerName);
+	    			break;
+	    		}
+	    		if (currentPlayerID == 4) {
+	    			currentPlayer = game.add.sprite(480,480,'character_yellow');
+                    currentPlayerName.x = 2;
+                    currentPlayerName.y = -15;
+                    currentPlayer.addChild(currentPlayerName);
+	    			break;
+	    		}
+    		}
+    	}
+
+    	// Initialize other players.
+    	playerOne = game.add.sprite(0, -32, 'character_red');
+    	playerTwo = game.add.sprite(0, -32, 'character_green');
+    	playerThree = game.add.sprite(0, -32, 'character_blue');
+    	playerFour = game.add.sprite(0, -32, 'character_yellow');
+
+        // Spawn every player into game.
+        drawOtherPlayers(gameUsers.length, currentPlayerID);
+
+    	// Draw lives
+      	lives = game.add.group();
+      	for (var i = 0; i < 3; i++) {
+      		if (currentPlayerID == 1) {
+      			var life = game.add.sprite((160+(i*32)), 544, 'character_red');
+      			lives.add(life);
+      		}
+      		else if (currentPlayerID == 2) {
+      			var life = game.add.sprite((160+(i*32)), 544, 'character_green');
+      			lives.add(life);
+      		}
+      		else if (currentPlayerID == 3) {
+      			var life = game.add.sprite((160+(i*32)), 544, 'character_blue');
+      			lives.add(life);
+      		}
+      		else if (currentPlayerID == 4) {
+      			var life = game.add.sprite((160+(i*32)), 544, 'character_yellow');
+      			lives.add(life);
+      		}
+      	}
+
+    	// Enable physics for current player.
+	    game.physics.arcade.enable(currentPlayer);
+
+	    game.physics.arcade.enable(playerOne);
+	    game.physics.arcade.enable(playerTwo);
+	    game.physics.arcade.enable(playerThree);
+	    game.physics.arcade.enable(playerFour);
+
+	    playerOne.body.immovable = true;
+	    playerTwo.body.immovable = true;
+	    playerThree.body.immovable = true;
+	    playerFour.body.immovable = true;
+
+    }
+
+    function update() {
+
+    	if (currentPlayer == null || currentPlayer.body == null) {
+    		return;
+    	}
+    	else {
+
+    		// Check if player is touching explosion.
+    		game.physics.arcade.overlap(currentPlayer, explosionCenter, explodePlayer);
+    		game.physics.arcade.overlap(currentPlayer, explosionTop, explodePlayer);
+    		game.physics.arcade.overlap(currentPlayer, explosionBottom, explodePlayer);
+    		game.physics.arcade.overlap(currentPlayer, explosionLeft, explodePlayer);
+    		game.physics.arcade.overlap(currentPlayer, explosionRight, explodePlayer);
+
+    		checkForInput(currentPlayer);
+
+	        if(spaceKey.isDown && canPlaceBomb) {
+	          	canPlaceBomb = false;
+	          	spawnBomb();
+	        }
+
+      }
+    }
+
+    function spawnBomb() {
+      	// Used to spawn bomb in center of a tile.
+		var x = Math.round(currentPlayer.position.x / 32);
+		var y = Math.round(currentPlayer.position.y / 32);
+
+		var b = new Bomb(game, "<%= current_user.id%>", x*32, y*32);
+
+		currentPlayer.bringToTop();
+		bombs.add(b);
+		cooldownTimer.start();
+
+      	// Send post request for player placing bomb.
+      	sendPost(currentChannelName, currentGameID, currentPlayerID, true, false, currentPlayer.x, currentPlayer.y);
+
+    }
+
+    // Used to spawn bombs from other players.
+    function spawnClientBomb(user, x, y) {
+
+    	if (user == currentPlayerID) {
+    		// Do not spawn client bomb for current user.
+    	}
+    	else {
+
+	      	// Used to spawn bomb in center of a tile.
+			var x = Math.round(x / 32);
+			var y = Math.round(y / 32);
+
+			var b = new Bomb(game, user, x*32, y*32);
+
+			bombs.add(b);
+			cooldownTimer.start();
+
+    	}
+
+    }
+
+    function explodeBomb(){
+
+        if (soundReady) {
+            explosionSound.play();
+        }
+
+		// Round x,y coordinates and divide by 32 so they are easier to read.
+		var x = Math.round(this.position.x / 32);
+		var y = Math.round(this.position.y / 32);
+
+		// Get tiles in bomb radius, used for animations.
+		var tileAbove = map.getTileAbove(map.getLayer(), x, y);
+		var tileBelow = map.getTileBelow(map.getLayer(), x, y);
+		var tileLeft = map.getTileLeft(map.getLayer(), x, y);
+		var tileRight = map.getTileRight(map.getLayer(), x, y);
+
+		// Animation for center of explosion (tile that bomb is on).
+		explosionCenter = game.add.sprite(x*32, y*32, 'explosions');
+		game.physics.arcade.enable(explosionCenter);
+		explosionCenter.animations.add('explode', [1,2,3,6]);
+		explosionCenter.animations.play('explode', 9, false, true);
+
+		// Animation for tile above the bomb.
+		if (tileAbove.index === 113) {
+			explosionTop = game.add.sprite(x*32, (y-1)*32, 'explosions');
+			game.physics.arcade.enable(explosionTop);
+			explosionTop.animations.add('explodeTop', [0,0,8,8]);
+			explosionTop.animations.play('explodeTop', 9, false, true);
+		}
+		else if (tileAbove.index === 135) {
+			explosionTop = game.add.sprite(x*32, (y-1)*32, 'explosions');
+			game.physics.arcade.enable(explosionTop);
+			explosionTop.animations.add('explodeTop', [0,0,8,8]);
+			explosionTop.animations.play('explodeTop', 9, false, true);
+
+			// Replace breakable tile with floor tile.
+			map.putTile(113, x, y-1, layer);
+
+			// Remove tile from breakableTiles
+			for (var b = 0; b < breakableTiles.length; b++) {
+			  	if (breakableTiles[b][0] === x && breakableTiles[b][1] === y-1) {
+			    	// console.log("Removing breakable tile at x:" + x + " y:" + (y-1) + " at index " + b);
+			    	brokenTiles.push(breakableTiles[b]);
+			    	breakableTiles.splice(b, 1);
+			  	}
+			}
+		}
+
+      	// Animation for tile below the bomb.
+      	if (tileBelow.index === 113) {
+        	explosionBottom = game.add.sprite(x*32, (y+1)*32, 'explosions');
+        	game.physics.arcade.enable(explosionBottom);
+        	explosionBottom.animations.add('explodeBottom', [0,0,10,10]);
+        	explosionBottom.animations.play('explodeBottom', 9, false, true);
+      	}
+      	else if (tileBelow.index === 135) {
+        	explosionBottom = game.add.sprite(x*32, (y+1)*32, 'explosions');
+        	game.physics.arcade.enable(explosionBottom);
+        	explosionBottom.animations.add('explodeBottom', [0,0,10,10]);
+        	explosionBottom.animations.play('explodeBottom', 9, false, true);
+
+        	// Replace breakable tile with floor tile.
+        	map.putTile(113, x, y+1, layer);
+
+        	// Remove tile from breakableTiles
+        	for (var b = 0; b < breakableTiles.length; b++) {
+          		if (breakableTiles[b][0] === x && breakableTiles[b][1] === y+1) {
+            		//console.log("Removing breakable tile at x:" + x + " y:" + (y+1) + " at index " + b);
+            		brokenTiles.push(breakableTiles[b]);
+            		breakableTiles.splice(b, 1);
+          		}
+        	}
+      	}
+
+      	// Animation for tile to the left of bomb.
+      	if (tileLeft.index === 113) {
+      		explosionLeft = game.add.sprite((x-1)*32, y*32, 'explosions');
+      		game.physics.arcade.enable(explosionLeft);
+      		explosionLeft.animations.add('explodeLeft', [0,0,4,4]);
+        	explosionLeft.animations.play('explodeLeft', 9, false, true);
+      	}
+      	else if (tileLeft.index === 135) {
+        	explosionLeft = game.add.sprite((x-1)*32, y*32, 'explosions');
+        	game.physics.arcade.enable(explosionLeft);
+        	explosionLeft.animations.add('explodeLeft', [0,0,4,4]);
+        	explosionLeft.animations.play('explodeLeft', 9, false, true);
+
+        	// Replace breakable tile with floor tile.
+        	map.putTile(113, x-1, y, layer);
+
+        	// Remove tile from breakableTiles
+        	for (var b = 0; b < breakableTiles.length; b++) {
+          		if (breakableTiles[b][0] === x-1 && breakableTiles[b][1] === y) {
+            		//console.log("Removing breakable tile at x:" + (x-1) + " y:" + y + " at index " + b);
+            		brokenTiles.push(breakableTiles[b]);
+            		breakableTiles.splice(b, 1);
+         		}
+        	}
+      	}
+
+      	// Animation for tile to the right of bomb.
+      	if (tileRight.index === 113) {
+        	explosionRight = game.add.sprite((x+1)*32, y*32, 'explosions');
+        	game.physics.arcade.enable(explosionRight);
+        	explosionRight.animations.add('explodeRight', [0,0,7,7]);
+        	explosionRight.animations.play('explodeRight', 9, false, true);
+     	}
+      	else if (tileRight.index === 135) {
+        	explosionRight = game.add.sprite((x+1)*32, y*32, 'explosions');
+        	game.physics.arcade.enable(explosionRight);
+        	explosionRight.animations.add('explodeRight', [0,0,7,7]);
+        	explosionRight.animations.play('explodeRight', 9, false, true);
+
+	        // Replace breakable tile with floor tile.
+	        map.putTile(113, x+1, y, layer);
+
+	        // Remove tile from breakableTiles
+	        for (var b = 0; b < breakableTiles.length; b++) {
+	          	if (breakableTiles[b][0] === x+1 && breakableTiles[b][1] === y) {
+	            	//console.log("Removing breakable tile at x:" + (x+1) + " y:" + y + " at index " + b);
+	            	brokenTiles.push(breakableTiles[b]);
+	            	breakableTiles.splice(b, 1);
+	          }
+	        }
+	    }
+
+      	// Remove exploded bomb from bombs group.
+      	bombs.remove(this);
+
+    }
+
+    function explodePlayer() {
+
+    	if (lives.length > 0) {
+			lives.removeChildAt(lives.length - 1);
+
+            if (lives.length == 0) {
+                sendToGrave();
+            }
+            else {
+                // Spawn player again if they have lives left.
+                if (currentPlayerID == 1) {
+                    currentPlayer.x = 32;
+                    currentPlayer.y = 32;
+                }
+                else if (currentPlayerID == 2) {
+                    currentPlayer.x = 480;
+                    currentPlayer.y = 32;
+                }
+                else if (currentPlayerID == 3) {
+                    currentPlayer.x = 32;
+                    currentPlayer.y = 480;
+                }
+                else if (currentPlayerID == 4) {
+                    currentPlayer.x = 480;
+                    currentPlayer.y = 480;
+                }
+
+                // Send update to other clients.
+                sendPost(currentChannelName, currentGameID, currentPlayerID, false, false, currentPlayer.x, currentPlayer.y);
+            }
+    	}
+    }
+
+    function sendToGrave() {
+        // Disable physics for dead player.
+        currentPlayer.body.destroy();
+
+        // Move dead player to grave.
+        //currentPlayer.destroy();
+
+        if (currentPlayerID == 1) {
+            //var graveSprite = game.add.sprite(384, 544, 'character_red');
+            currentPlayer.x = 384;
+            currentPlayer.y = 544;
+        }
+        else if (currentPlayerID == 2) {
+            //var graveSprite = game.add.sprite(416, 544, 'character_green');
+            currentPlayer.x = 416;
+            currentPlayer.y = 544;
+        }
+        else if (currentPlayerID == 3) {
+            //var graveSprite = game.add.sprite(448, 544, 'character_blue');
+            currentPlayer.x = 448;
+            currentPlayer.y = 544;
+        }
+        else if (currentPlayerID == 4) {
+            //var graveSprite = game.add.sprite(480, 544, 'character_yellow');
+            currentPlayer.x = 480;
+            currentPlayer.y = 544;
+        }
+
+        sendPost(currentChannelName, currentGameID, currentPlayerID, false, true, currentPlayer.x, currentPlayer.y);
+    }
+
+    function resetCooldown() {
+		canPlaceBomb = true;
+		cooldownTimer.stop(false);
+    }
+
+    function sendMovementUpdate() {
+    	// Send post request if player has moved
+        if (currentPlayer.deltaX != 0. || currentPlayer.deltaY != 0.) {
+
+            // If player dies while holding right or down, game will think it is still moving.
+            if (currentPlayer.body != null) {
+
+
+        	   // currentPlayerID is a players ID local to the game! (1, 2, 3, 4).
+        	   sendPost(currentChannelName, currentGameID, currentPlayerID, false, false, currentPlayer.x, currentPlayer.y);
+            }
+        }
+    }
+
+    // Draw other players relative to this player.
+    function drawOtherPlayers(numPlayers, cPID) {
+
+        var nameStyle = { font: "15px 'Righteous', cursive", fill: "#fff"};
+
+
+        switch (numPlayers) {
+            case 2:
+                var pOneEmail = gameUsers[0].substring(0, gameUsers[0].indexOf('@'));
+
+                if (pOneEmail.length > 6) {
+                    pOneEmail = pOneEmail.substring(0, 6).concat("...");
+                }
+
+                var pTwoEmail = gameUsers[1].substring(0, gameUsers[1].indexOf('@'));
+
+                if (pTwoEmail.length > 6) {
+                    pTwoEmail = pTwoEmail.substring(0, 6).concat("...");
+                }
+                break;
+            case 3:
+                var pOneEmail = gameUsers[0].substring(0, gameUsers[0].indexOf('@'));
+
+                if (pOneEmail.length > 6) {
+                    pOneEmail = pOneEmail.substring(0, 6).concat("...");
+                }
+
+                var pTwoEmail = gameUsers[1].substring(0, gameUsers[1].indexOf('@'));
+
+                if (pTwoEmail.length > 6) {
+                    pTwoEmail = pTwoEmail.substring(0, 6).concat("...");
+                }
+
+                var pThreeEmail = gameUsers[2].substring(0, gameUsers[2].indexOf('@'));
+
+                if (pThreeEmail.length > 6) {
+                    pThreeEmail = pThreeEmail.substring(0, 6).concat("...");
+                }
+                break;
+            case 4:
+                var pOneEmail = gameUsers[0].substring(0, gameUsers[0].indexOf('@'));
+
+                if (pOneEmail.length > 6) {
+                    pOneEmail = pOneEmail.substring(0, 6).concat("...");
+                }
+
+                var pTwoEmail = gameUsers[1].substring(0, gameUsers[1].indexOf('@'));
+
+                if (pTwoEmail.length > 6) {
+                    pTwoEmail = pTwoEmail.substring(0, 6).concat("...");
+                }
+
+                var pThreeEmail = gameUsers[2].substring(0, gameUsers[2].indexOf('@'));
+
+                if (pThreeEmail.length > 6) {
+                    pThreeEmail = pThreeEmail.substring(0, 6).concat("...");
+                }
+
+                var pFourEmail = gameUsers[3].substring(0, gameUsers[3].indexOf('@'));
+
+                if (pFourEmail.length > 6) {
+                    pFourEmail = pFourEmail.substring(0, 6).concat("...");
+                }
+                break;
+            default:
+                // This case should never be reached.
+                console.log("ERROR DRAWING NAME...");
+        }
+
+        if (numPlayers == 2) {
+
+            var pOneName = game.add.text(800, 800, pOneEmail, nameStyle);
+            var pTwoName = game.add.text(800, 800, pTwoEmail, nameStyle);
+
+        }
+        else if (numPlayers == 3) {
+
+            var pOneName = game.add.text(800, 800, pOneEmail, nameStyle);
+            var pTwoName = game.add.text(800, 800, pTwoEmail, nameStyle);
+            var pThreeName = game.add.text(800, 800, pThreeEmail, nameStyle);
+
+        }
+        else if (numPlayers == 4) {
+
+            var pOneName = game.add.text(800, 800, pOneEmail, nameStyle);
+            var pTwoName = game.add.text(800, 800, pTwoEmail, nameStyle);
+            var pThreeName = game.add.text(800, 800, pThreeEmail, nameStyle);
+            var pFourName = game.add.text(800, 800, pFourEmail, nameStyle);
+
+        }
+
+        if (numPlayers == 2) {
+            if (cPID == 1) {
+                playerTwo.x = 480;
+                playerTwo.y = 32;
+
+                pTwoName.x = -20;
+                pTwoName.y = -15;
+                playerTwo.addChild(pTwoName);
+            }
+            else if (cPID == 2) {
+                playerOne.x = 32;
+                playerOne.y = 32;
+
+                pOneName.x = -20;
+                pOneName.y = -15;
+                playerOne.addChild(pOneName);
+            }
+        }
+        else if (numPlayers == 3) {
+            if (cPID == 1) {
+                playerTwo.x = 480;
+                playerTwo.y = 32;
+
+                pTwoName.x = -20;
+                pTwoName.y = -15;
+                playerTwo.addChild(pTwoName);
+
+                playerThree.x = 32;
+                playerThree.y = 480;
+
+                pThreeName.x = -20;
+                pThreeName.y = -15;
+                playerThree.addChild(pThreeName);
+            }
+            else if (cPID == 2) {
+                playerOne.x = 32;
+                playerOne.y = 32;
+
+                pOneName.x = -20;
+                pOneName.y = -15;
+                playerOne.addChild(pOneName);
+
+                playerThree.x = 32;
+                playerThree.y = 480;
+
+                pThreeName.x = -20;
+                pThreeName.y = -15;
+                playerThree.addChild(pThreeName);
+            }
+            else if (cPID == 3) {
+                playerOne.x = 32;
+                playerOne.y = 32;
+
+                pOneName.x = -20;
+                pOneName.y = -15;
+                playerOne.addChild(pOneName);
+
+                playerTwo.x = 480;
+                playerTwo.y = 32;
+
+                pTwoName.x = -20;
+                pTwoName.y = -15;
+                playerTwo.addChild(pTwoName);
+            }
+        }
+        else if (numPlayers == 4) {
+            if (cPID == 1) {
+                playerTwo.x = 480;
+                playerTwo.y = 32;
+
+                pTwoName.x = -20;
+                pTwoName.y = -15;
+                playerTwo.addChild(pTwoName);
+
+                playerThree.x = 32;
+                playerThree.y = 480;
+
+                pThreeName.x = -20;
+                pThreeName.y = -15;
+                playerThree.addChild(pThreeName);
+
+                playerFour.x = 480;
+                playerFour.y = 480;
+
+                pFourName.x = -20;
+                pFourName.y = -15;
+                playerFour.addChild(pFourName);
+            }
+            else if (cPID == 2) {
+                playerOne.x = 32;
+                playerOne.y = 32;
+
+                pOneName.x = -20;
+                pOneName.y = -15;
+                playerOne.addChild(pOneName);
+
+                playerThree.x = 32;
+                playerThree.y = 480;
+
+                pThreeName.x = -20;
+                pThreeName.y = -15;
+                playerThree.addChild(pThreeName);
+
+                playerFour.x = 480;
+                playerFour.y = 480;
+
+                pFourName.x = -20;
+                pFourName.y = -15;
+                playerFour.addChild(pFourName);
+            }
+            else if (cPID == 3) {
+                playerOne.x = 32;
+                playerOne.y = 32;
+
+                pOneName.x = -20;
+                pOneName.y = -15;
+                playerOne.addChild(pOneName);
+
+                playerTwo.x = 480;
+                playerTwo.y = 32;
+
+                pTwoName.x = -20;
+                pTwoName.y = -15;
+                playerTwo.addChild(pTwoName);
+
+                playerFour.x = 480;
+                playerFour.y = 480;
+
+                pFourName.x = -20;
+                pFourName.y = -15;
+                playerFour.addChild(pFourName);
+            }
+            else if (cPID == 4) {
+                playerOne.x = 32;
+                playerOne.y = 32;
+
+                pOneName.x = -20;
+                pOneName.y = -15;
+                playerOne.addChild(pOneName);
+
+                playerTwo.x = 480;
+                playerTwo.y = 32;
+
+                pTwoName.x = -20;
+                pTwoName.y = -15;
+                playerTwo.addChild(pTwoName);
+
+                playerThree.x = 32;
+                playerThree.y = 480;
+
+                pThreeName.x = -20;
+                pThreeName.y = -15;
+                playerThree.addChild(pThreeName);
+            }
+        }
+    }
+
+    function checkForInput(player) {
+
+    	// Collision check
+    	game.physics.arcade.collide(player, layer);
+	    game.physics.arcade.collide(player, bombs);
+
+	   	game.physics.arcade.collide(player, playerOne);
+	    game.physics.arcade.collide(player, playerTwo);
+	    game.physics.arcade.collide(player, playerThree);
+	    game.physics.arcade.collide(player, playerFour);
+
+        if (player.body != null) {
+    	    // Movement
+    	    player.body.velocity.y = 0;
+    	    player.body.velocity.x = 0;
+
+    	    if(cursors.up.isDown) {
+    	    	player.body.velocity.y -= 125;
+    	    }
+    	    else if(cursors.down.isDown) {
+    	    	player.body.velocity.y += 125;
+    	    }
+    	    if(cursors.left.isDown) {
+    	    	player.body.velocity.x -= 125;
+    	    }
+    	    else if(cursors.right.isDown) {
+    	    	player.body.velocity.x += 125;
+    	    }
+        }
+    }
+
+    function updatePlayer(userid, x, y) {
+
+    	if (userid == 1 && userid != currentPlayerID) {
+    		playerOne.x = x;
+    		playerOne.y = y;
+    	}
+    	if (userid == 2 && userid != currentPlayerID) {
+    		playerTwo.x = x;
+    		playerTwo.y = y;
+    	}
+    	if (userid == 3 && userid != currentPlayerID) {
+    		playerThree.x = x;
+    		playerThree.y = y;
+    	}
+    	if (userid == 4 && userid != currentPlayerID) {
+    		playerFour.x = x;
+    		playerFour.y = y;
+    	}
+
+    }
+
+    function gameWin() {
+
+        if (graveyard.length == gameUsers.length - 1) {
+
+            for (var w = 0; w < gameUsers.length; w++) {
+                if (graveyard.indexOf(w+1) == -1) {
+                    console.log("Player " + (w+1) + " is the winner!");
+                    endGameText = game.add.text(64, 192, "Player " + (w+1) + " wins!", endGameStyle);
+
+                    if ((w+1) == currentPlayerID) {
+	                    $.ajax({
+	                        type: "POST",
+	                        url:  '/bombermen/game/winner/<%=current_user.id%>',
+	                      success: function(data, textStatus, xhr) {
+	                      	console.log("POST sent successfully, high score is now <%=current_user.high_score%>");
+	                      },
+	                      error: function(jqXHR, textStatus, errorThrown) {
+	                        showErrorModal(errorThrown);
+	                      }
+
+	                    });
+                    }
+
+                }
+            }
+
+            exitButton = game.add.button(192, 288, 'exit', onExit, this);
+
+            gameWinTimer.stop();
+        }
+
+    }
+
+    function onExit() {
+        // Unsubscribe current chat channel
+        pusher.unsubscribe(gameObject["channel_name"] + "_chat");
+
+        $.ajax({
+            type: "POST",
+            url: "/bombermen/game/leave/" + gameObject["id"],
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify(
+                {
+                    "user_id": <%= current_user[:id] %>
+                }
+            )
+        });
+
+        window.location = "/";
+    }
+
+    function addPlayerToGrave(id) {
+        graveyard.push(id);
+    }
+
+    function updateBomb(user, x, y) {
+    	spawnClientBomb(user, x, y);
+    }
+
+    function checkSoundReady() {
+        soundReady = true;
+
+        bgm.play();
+    }
+
+    function addPlayer(lobbyid, currentPlayer) {
+
+      $.ajax({
+          type: "POST",
+          url: "/bombermen/adduser/" + lobbyid + "/" + currentPlayer,
+          success: function(data){
+        	console.log("successfully added player!");
+          },
+          error: function(xhr, error) {
+            console.log("ADD PLAYER ERROR");
+            console.log(xhr);
+            console.log(error);
+          }
+      });
+    }
+
+    // May not be needed anymore...
+    function initializePlayers(lobbyid) {
+      $.ajax({
+          type: "GET",
+          url: "/bombermen/getusers/" + lobbyid,
+          dataType: "json",
+          success: function(data){
+
+            console.log("Getting players in game...");
+            console.log(JSON.stringify(data));
+            var players = JSON.parse(JSON.stringify(data));
+            console.log("Finished parsing players in game to players var...");
+
+          }
+      });
+    }
+
+    function sendPost(channelName, gameid, userid, placedBomb, killed, x, y) {
+      var username = "test";
+        $.ajax({
+            type: "POST",
+            url:  '/bombermen/sendMovement',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(
+            {
+                "channel_name":channelName,
+                "game_id":gameid,
+                "user":
+                {
+                    "id":userid,
+                    "x":x,
+                    "y":y,
+                    "dropped_bomb":placedBomb,
+                    "got_killed":killed,
+                    "power_up":
+                    {
+                        "pick_up":false,
+                        "type":-1
+                    }
+                },
+                "bricks":brokenTiles
+            }),
+          success: function(data, textStatus, xhr) {
+            //alert(data.message)
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+            showErrorModal(errorThrown);
+          }
+
+        });
+
+    }
+
+    // Bomb class
+    Bomb = function(game, u, x, y) {
+
+    	this.bombOwner = u;
+
+      	Phaser.Sprite.call(this, game, x, y ,'bomb');
+      	game.physics.arcade.enable(this);
+      	this.body.immovable = true;
+
+      	var bombTimer = game.time.create(false);
+      	bombTimer.repeat(3000,0, explodeBomb, this);
+      	bombTimer.start();
+
+    };
+
+    Bomb.prototype = Object.create(Phaser.Sprite.prototype);
+    Bomb.prototype.constructor = Bomb;
+
+</script>
+
+</center>
+
+</body>
+</html>

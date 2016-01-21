@@ -1,0 +1,36 @@
+ <%= stylesheet_link_tag 'chat' %>
+
+  <input type="button" name="toggleChat" value="toggle" />
+
+<p id="notice"><%= notice %></p>
+
+<h1>Listing Gamechats</h1>
+  <input type="button" name="toggle" value="toggle" onclick="chatBox"/>
+      <div>
+        <button type="button" onclick="abc()">Create Game</button>
+      </div>
+<div id="chat_div"></div>
+<!-- <table>
+  <thead>
+    <tr>
+      <th>Lobbyid</th>
+      <th>Message</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @gamechats.each do |gamechat| %>
+      <tr>
+        <td><%= gamechat.lobbyid %></td>
+        <td><%= gamechat.message %></td>
+        <td><%= link_to 'Show', gamechat %></td>
+        <td><%= link_to 'Edit', edit_gamechat_path(gamechat) %></td>
+        <td><%= link_to 'Destroy', gamechat, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+ -->
+<br>
+

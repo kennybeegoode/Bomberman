@@ -1,0 +1,41 @@
+<%= form_for(@gamelobby) do |f| %>
+  <% if @gamelobby.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@gamelobby.errors.count, "error") %> prohibited this gamelobby from being saved:</h2>
+
+      <ul>
+      <% @gamelobby.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :lobbyid %><br>
+    <%= f.text_field :lobbyid %>
+  </div>
+  <div class="field">
+    <%= f.label :lobbyname %><br>
+    <%= f.text_field :lobbyname %>
+  </div>
+  <div class="field">
+    <%= f.label :public %><br>
+    <%= f.text_field :public %>
+  </div>
+  <div class="field">
+    <%= f.label :gamestarted %><br>
+    <%= f.text_field :gamestarted %>
+  </div>
+  <div class="field">
+    <%= f.label :usercount %><br>
+    <%= f.text_field :usercount %>
+  </div>
+  <div class="field">
+    <%= f.label :userlist %><br>
+    <%= f.text_field :userlist %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

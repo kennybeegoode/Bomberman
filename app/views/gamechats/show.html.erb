@@ -1,0 +1,14 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Lobbyid:</strong>
+  <%= @gamechat.lobbyid %>
+</p>
+
+<p>
+  <strong>Message:</strong>
+  <%= @gamechat.message %>
+</p>
+
+<%= link_to 'Edit', edit_gamechat_path(@gamechat) %> |
+<%= link_to 'Back', gamechats_path %>

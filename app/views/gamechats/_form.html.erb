@@ -1,0 +1,25 @@
+<%= form_for(@gamechat) do |f| %>
+  <% if @gamechat.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@gamechat.errors.count, "error") %> prohibited this gamechat from being saved:</h2>
+
+      <ul>
+      <% @gamechat.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :lobbyid %><br>
+    <%= f.text_area :lobbyid %>
+  </div>
+  <div class="field">
+    <%= f.label :message %><br>
+    <%= f.text_area :message %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

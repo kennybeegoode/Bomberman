@@ -1,0 +1,355 @@
+<!doctype html>
+<html>
+<head>
+	<title>Game</title>
+</head>
+<body>
+
+	<script>
+
+		var game = new Phaser.Game(544, 544, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+		var map;
+		var layer;
+
+		var bombs; // group
+
+		var cooldownTimer;
+		var bombTimer;
+		var updateTimer;
+		var canPlaceBomb = true;
+
+		// Array containing array of unbreakable tile data (x, y, newTileID, oldTileID).
+		var unbreakableTiles = [];
+
+		// Array containing array of breakable tile data (x, y, newTileID, oldTileID).
+		var breakableTiles = [];
+
+		// Array containing array of tiles broken (x, y, newTileID, oldTileID).
+		var brokenTiles = [];
+
+		function preload() {
+
+			game.load.tilemap('map', '/assets/map.json', null, Phaser.Tilemap.TILED_JSON);
+			game.load.image('tiles', '/assets/gridtiles.png');
+			game.load.image('character', '/assets/game_character.png');
+			game.load.image('bomb', '/assets/bomb.png');
+			game.load.spritesheet('explosions', '/assets/explosiontiles.png', 32, 32, 11);
+
+		}
+
+		function create() {
+
+			this.stage.disableVisibilityChange = true;
+
+			map = game.add.tilemap('map');
+			map.addTilesetImage('tiles', 'tiles');
+			layer = map.createLayer('Tile Layer 1');
+
+			map.setCollision(27, true, layer); // Map bouondary
+			map.setCollision(132, true, layer); // Unbreakable block 
+			map.setCollision(135, true, layer); // Breakable block
+
+			player = game.add.sprite(32,32,'character');
+
+			game.physics.arcade.enable(player);
+
+			cursors = game.input.keyboard.createCursorKeys();
+			spaceKey = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+
+			cooldownTimer = game.time.create(false);
+			cooldownTimer.loop(250, resetCooldown, this);
+
+			updateTimer = game.time.create(false);
+			updateTimer.loop(500, sendUpdate, this);
+			updateTimer.start();
+
+			bombs = game.add.group();
+
+			// Add Unbreakable/breakable blocks to array
+			for (var x = 0; x < 17; x++) {
+				for (var y = 0; y < 17; y++) {
+
+					var t = map.getTile(x, y, layer, true);
+					var tileInfo = [x, y, 113 ,t.index];
+					if (t.index === 132) {
+						unbreakableTiles.push(tileInfo);
+					}
+					else if (t.index === 135) {
+						breakableTiles.push(tileInfo);
+					}
+
+				}
+			}
+
+			// Print unbreakable tiles
+			// for (var u in unbreakableTiles) {
+			// 	console.log(unbreakableTiles[u]);
+			// }
+
+			// Print breakable tiles
+			// for (var b in breakableTiles) {
+			// 	console.log(breakableTiles[b]);
+			// }
+
+		}
+
+		function update() {
+
+			// Check for collision
+			game.physics.arcade.collide(player, layer);
+			game.physics.arcade.collide(player, bombs);
+
+		    // Movement
+		    player.body.velocity.y = 0;
+		    player.body.velocity.x = 0;
+		 
+		    if(cursors.up.isDown) {
+		      player.body.velocity.y -= 150;
+		    }
+		    else if(cursors.down.isDown) {
+		      player.body.velocity.y += 150;
+		    }
+		    if(cursors.left.isDown) {
+		      player.body.velocity.x -= 150;
+		    }
+		    else if(cursors.right.isDown) {
+		      player.body.velocity.x += 150;
+		    }
+
+		    if(spaceKey.isDown && canPlaceBomb) {
+		    	canPlaceBomb = false;
+		    	spawnBomb();
+		    }
+
+		    //console.log("user is " + "<%=current_user.email%>");
+
+		}
+
+		function spawnBomb() {
+
+			// Used to spawn bomb in center of a tile.
+			var x = Math.round(player.position.x / 32);
+			var y = Math.round(player.position.y / 32);
+
+			var b = new Bomb(game, x*32, y*32);
+			player.bringToTop();
+			bombs.add(b);
+			cooldownTimer.start();
+
+			// Send post request for player placing bomb.
+			sendPost("G123", "U123", true, false);
+
+		}
+
+		function explodeBomb(){
+
+			// Round x,y coordinates and divide by 32 so they are easier to read.
+			var x = Math.round(this.position.x / 32);
+			var y = Math.round(this.position.y / 32);
+
+			// Get tiles in bomb radius, used for animations.
+			var tileAbove = map.getTileAbove(map.getLayer(), x, y);
+			var tileBelow = map.getTileBelow(map.getLayer(), x, y);
+			var tileLeft = map.getTileLeft(map.getLayer(), x, y);
+			var tileRight = map.getTileRight(map.getLayer(), x, y);
+
+			// Animation for center of explosion (tile that bomb is on).
+			var explosionCenter = game.add.sprite(x*32, y*32, 'explosions');
+			explosionCenter.animations.add('explode', [1,2,3,6]);
+			explosionCenter.animations.play('explode', 9, false, true);
+
+			// Animation for tile above the bomb.
+			if (tileAbove.index === 113) {
+				var explosionTop = game.add.sprite(x*32, (y-1)*32, 'explosions');
+				explosionTop.animations.add('explodeTop', [0,0,8,8]);
+				explosionTop.animations.play('explodeTop', 9, false, true);
+			} 
+			else if (tileAbove.index === 135) {
+				var explosionTop = game.add.sprite(x*32, (y-1)*32, 'explosions');
+				explosionTop.animations.add('explodeTop', [0,0,8,8]);
+				explosionTop.animations.play('explodeTop', 9, false, true);
+
+				// Replace breakable tile with floor tile.
+				map.putTile(113, x, y-1, layer);
+
+				// Remove tile from breakableTiles
+				for (var b = 0; b < breakableTiles.length; b++) {
+					if (breakableTiles[b][0] === x && breakableTiles[b][1] === y-1) {
+						// console.log("Removing breakable tile at x:" + x + " y:" + (y-1) + " at index " + b);
+						brokenTiles.push(breakableTiles[b]);
+						breakableTiles.splice(b, 1);
+					}
+				}
+
+			}
+
+			// Animation for tile below the bomb.
+			if (tileBelow.index === 113) {
+				var explosionBottom = game.add.sprite(x*32, (y+1)*32, 'explosions');
+				explosionBottom.animations.add('explodeBottom', [0,0,10,10]);
+				explosionBottom.animations.play('explodeBottom', 9, false, true);
+			}
+			else if (tileBelow.index === 135) {
+				var explosionBottom = game.add.sprite(x*32, (y+1)*32, 'explosions');
+				explosionBottom.animations.add('explodeBottom', [0,0,10,10]);
+				explosionBottom.animations.play('explodeBottom', 9, false, true);
+
+				// Replace breakable tile with floor tile.
+				map.putTile(113, x, y+1, layer);
+
+				// Remove tile from breakableTiles
+				for (var b = 0; b < breakableTiles.length; b++) {
+					if (breakableTiles[b][0] === x && breakableTiles[b][1] === y+1) {
+						//console.log("Removing breakable tile at x:" + x + " y:" + (y+1) + " at index " + b);
+						brokenTiles.push(breakableTiles[b]);
+						breakableTiles.splice(b, 1);
+					}
+				}
+			
+			}
+
+			// Animation for tile to the left of bomb.
+			if (tileLeft.index === 113) {
+				var explosionLeft = game.add.sprite((x-1)*32, y*32, 'explosions');
+				explosionLeft.animations.add('explodeLeft', [0,0,4,4]);
+				explosionLeft.animations.play('explodeLeft', 9, false, true);
+			}
+			else if (tileLeft.index === 135) {
+				var explosionLeft = game.add.sprite((x-1)*32, y*32, 'explosions');
+				explosionLeft.animations.add('explodeLeft', [0,0,4,4]);
+				explosionLeft.animations.play('explodeLeft', 9, false, true);
+
+				// Replace breakable tile with floor tile.
+				map.putTile(113, x-1, y, layer);
+
+				// Remove tile from breakableTiles
+				for (var b = 0; b < breakableTiles.length; b++) {
+					if (breakableTiles[b][0] === x-1 && breakableTiles[b][1] === y) {
+						//console.log("Removing breakable tile at x:" + (x-1) + " y:" + y + " at index " + b);
+						brokenTiles.push(breakableTiles[b]);
+						breakableTiles.splice(b, 1);
+					}
+				}
+
+			}
+
+			// Animation for tile to the right of bomb.
+			if (tileRight.index === 113) {
+				var explosionRight = game.add.sprite((x+1)*32, y*32, 'explosions');
+				explosionRight.animations.add('explodeRight', [0,0,7,7]);
+				explosionRight.animations.play('explodeRight', 9, false, true);
+			}
+			else if (tileRight.index === 135) {
+				var explosionRight = game.add.sprite((x+1)*32, y*32, 'explosions');
+				explosionRight.animations.add('explodeRight', [0,0,7,7]);
+				explosionRight.animations.play('explodeRight', 9, false, true);
+
+				// Replace breakable tile with floor tile.
+				map.putTile(113, x+1, y, layer);
+
+				// Remove tile from breakableTiles
+				for (var b = 0; b < breakableTiles.length; b++) {
+					if (breakableTiles[b][0] === x+1 && breakableTiles[b][1] === y) {
+						//console.log("Removing breakable tile at x:" + (x+1) + " y:" + y + " at index " + b);
+						brokenTiles.push(breakableTiles[b]);
+						breakableTiles.splice(b, 1);
+					}
+				}
+
+			}
+
+			// Remove exploded bomb from bombs group.
+			bombs.remove(this);
+		}
+
+		function resetCooldown() {
+			canPlaceBomb = true;
+			cooldownTimer.stop(false);
+		}
+
+		function sendUpdate() {
+			// Send post request if player has moved
+		    if (player.deltaX != 0 || player.deltaY != 0) {
+		    	sendPost("G123", "U123", false, false);
+		    }
+		}
+
+		function sendPost(gameid, userid, placedBomb, killed) {
+
+    	var username = "test";
+    // $.ajax({
+    //   type: "POST",
+    //   url: "/gamechats/sendMessage",
+    //   dataType: "json",
+    //   contentType: "application/json",
+    //   data: JSON.stringify(
+    //   {
+    //     "id": lobbyId,
+    //     "message": msg
+    //   }
+    //   ),
+    //   success: function(data, textStatus, xhr) {
+    //         // Show the game lobby
+    //         // showGameLobby(lobbyId, animate);
+    //         //alert(data.message)
+    //       },
+    //       error: function(jqXHR, textStatus, errorThrown) {
+    //         showErrorModal(errorThrown);
+    //       }
+    //     });
+
+
+	      $.ajax({
+	          type: "POST",
+	          url:  '/game/sendMovement',
+	          dataType: 'json',
+	          contentType: 'application/json',
+	          data: JSON.stringify(
+	          {
+	              "game_id":gameid,
+	              "user":
+	              {
+	                  "id":userid,
+	                  "x":player.x,
+	                  "y":player.y,
+	                  "dropped_bomb":placedBomb,
+	                  "got_killed":killed,
+	                  "power_up":
+	                  {
+	                      "pick_up":false,
+	                      "type":-1
+	                  }
+	              },
+	              "bricks":brokenTiles
+	          }),
+	        success: function(data, textStatus, xhr) {
+            //alert(data.message)
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+            showErrorModal(errorThrown);
+          }
+
+	      });
+
+		}
+
+		// Bomb class
+		Bomb = function(game, x, y) {
+
+			Phaser.Sprite.call(this, game, x, y ,'bomb');
+			game.physics.arcade.enable(this);
+			this.body.immovable = true;
+
+			var bombTimer = game.time.create(false);
+			bombTimer.repeat(3000,0, explodeBomb, this);
+			bombTimer.start();
+
+		};
+
+		Bomb.prototype = Object.create(Phaser.Sprite.prototype);
+		Bomb.prototype.constructor = Bomb;
+
+	</script>
+
+</body>
+</html>

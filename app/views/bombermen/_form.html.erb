@@ -1,0 +1,21 @@
+<%= form_for(@bomberman) do |f| %>
+  <% if @bomberman.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@bomberman.errors.count, "error") %> prohibited this bomberman from being saved:</h2>
+
+      <ul>
+      <% @bomberman.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :lobbyid %><br>
+    <%= f.text_area :lobbyid %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

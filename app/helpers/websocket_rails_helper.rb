@@ -1,0 +1,2 @@
+module WebsocketRailsHelper
+end

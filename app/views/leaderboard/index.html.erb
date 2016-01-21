@@ -1,0 +1,31 @@
+<link href='https://fonts.googleapis.com/css?family=Righteous' rel='stylesheet' type='text/css'>
+<div class = "leaderboard_image">
+  <hleader><font color="#f7c500"; font size = '6'; >BOMERMAN</font> </hleader>
+  <p id = "leaderboard"> <font color="#f7c500"; font size = '6'; ></br>LEADERBOARD</font></p>
+</div>
+<div id="leaderboard-container" class = "sign">
+  <div class = "scroll">
+
+    <table >
+
+      <tr>
+        <th id = 'rank_col'><font color="#f7c500"; font size = '4'>RANK</font></th>
+        <th id = 'user_col'><font color="#f7c500"; font size = '4' >PLAYER</font></th>
+        <th id = 'score_col'><font color="#f7c500"; font size = '4'>WINS</font></th>
+      </tr>
+
+      <% n = 1 %>
+      <% @users.each do |user|  %>
+          <tr>
+            <td class = "rank" ><font color="#FEFCFF"; font size = '4'><%= n %></font></td>
+            <td class = "player"><font color="#f7c500"  font size = '4' ><img class = "userpic" src=<%= user.image %> /><%= user.name %></font></td>
+            <td class = "wins"><font color="#FEFCFF"; font size = '4'><%= user.high_score %></font></td>
+
+            <% n = n + 1 %>
+          </tr>
+      <% end %>
+
+      <span style='float:right'></span>
+    </table>
+  </div>
+</div>

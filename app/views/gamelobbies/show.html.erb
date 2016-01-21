@@ -1,0 +1,253 @@
+<% users = @gamelobby[:user_list] %>
+<% host = User.find(users[0].to_s) %>
+<% map_paths = ["/assets/map_0.jpg", "/assets/map_1.jpg", "/assets/map_2.jpg"] %>
+
+
+<body onLoad="preloadImages()">
+<div id="game-room">
+
+  <div id="gamelobby"
+       data-id="<%= @gamelobby[:id] %>"
+       data-channel-name="<%= @gamelobby[:lobby_id] %>"
+       style="display: none"></div>
+
+  <div id="game-lobbies-content">
+    <div id="gr-content-container">
+      <div class="container-fluid">
+        <div class="gr-container-content">
+
+          <!-- Game info and players' thumbnails -->
+          <div class="row">
+            <div id="game-info-players-thumbnails-container">
+              <!-- Game room info -->
+              <div class="col-sm-5">
+                <div id="gr-info-container">
+                  <div class="gr-title">
+                    <%= @gamelobby[:lobby_name] %>
+                  </div>
+
+                  <hr/>
+
+                  <div class="gr-content">
+                    <!-- Create the URL for others to join -->
+                    <% url_without_id = request.original_url.to_s[0..request.original_url.to_s.rindex("/")] %>
+                    <% complete_url = "#{url_without_id}join/#{@gamelobby[:id]}" %>
+                    <span class="glyphicon glyphicon-link" style="-moz-user-select: all;
+                            -webkit-user-select: all;
+                            user-select: all;
+                            cursor: auto"><i><%= complete_url %></i></span>
+                  <span>HOST&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    :&nbsp;&nbsp;<i><%= host[:name] %></i>
+                  </span>
+                    <span>PUBLIC / PRIVATE :&nbsp;&nbsp;<i><%= @gamelobby[:public] ? "PUBLIC" : "PRIVATE" %></i></span>
+                  <span>PLAYERS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    :&nbsp;&nbsp;<i><%= users.length %></i>
+                  </span>
+                  </div>
+                </div>
+              </div>
+              <!-- End Game room info -->
+
+              <!-- Players thumbnails -->
+              <div class="col-sm-5">
+                <div id="gr-players-container">
+                  <div class="container-fluid">
+                    <!-- Player 1 and 2 -->
+                    <div class="row">
+                      <!-- Player 1 -->
+                      <div class="col-sm-6">
+                        <div class="player-info">
+                          <% name = "" %>
+                          <% image = instance_url + "/assets/img_thumbnail_0.png" %>
+                          <% user = users[0].nil? ? nil : User.find(users[0]) %>
+                          <% if ! user.nil? %>
+                              <% name = user[:name] %>
+
+                              <% if ! user[:image].nil? && user[:image].length > 0 %>
+                                  <% image = user[:image] %>
+                              <% end %>
+                          <% end %>
+
+                          <% if current_user[:id].to_s == user.id.to_s %>
+                              <div class="image-with-selection">
+                                <img id="img-thumbnail" class="img-user-thumbnail" src=<%= image %> />
+                                <div id="image-selection-arrow-container">
+                                  <div id="image-selection-arrow" onclick="nextThumbnail()"></div>
+                                </div>
+                              </div>
+
+                          <% else %>
+                              <div class="img-user-thumbnail" style="background-image: url(<%= image %>)"></div>
+                          <% end %>
+
+                          <div class="player-info-name"><%= name %></div>
+                        </div>
+                      </div>
+
+                      <!-- Player 2 -->
+                      <div class="col-sm-6">
+                        <div class="player-info">
+                          <% name = "" %>
+                          <% image = instance_url + "/assets/img_thumbnail_0.png" %>
+                          <% user = users[1].nil? ? nil : User.find(users[1]) %>
+                          <% if ! user.nil? %>
+                              <% name = user[:name] %>
+
+                              <% if ! user[:image].nil? && user[:image].length > 0 %>
+                                  <% image = user[:image] %>
+                              <% end %>
+                          <% end %>
+
+                          <% if ! user.nil? && current_user[:id].to_s == user.id.to_s %>
+                              <div class="image-with-selection">
+                                <img id="img-thumbnail" class="img-user-thumbnail" src=<%= image %> />
+                                <div id="image-selection-arrow-container">
+                                  <div id="image-selection-arrow" onclick="nextThumbnail()"></div>
+                                </div>
+                              </div>
+
+                          <% else %>
+                              <div class="img-user-thumbnail" style="background-image: url(<%= image %>)"></div>
+                          <% end %>
+
+                          <div class="player-info-name"><%= name %></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Player 3 and 4 -->
+                    <div class="row">
+                      <!-- Player 3 -->
+                      <div class="col-sm-6">
+                        <div class="player-info">
+                          <% name = "" %>
+                          <% image = instance_url + "/assets/img_thumbnail_0.png" %>
+                          <% user = users[2].nil? ? nil : User.find(users[2]) %>
+                          <% if ! user.nil? %>
+                              <% name = user[:name] %>
+
+                              <% if ! user[:image].nil? && user[:image].length > 0 %>
+                                  <% image = user[:image] %>
+                              <% end %>
+                          <% end %>
+
+                          <% if ! user.nil? && current_user[:id].to_s == user.id.to_s %>
+                              <div class="image-with-selection">
+                                <img id="img-thumbnail" class="img-user-thumbnail" src=<%= image %> />
+                                <div id="image-selection-arrow-container">
+                                  <div id="image-selection-arrow" onclick="nextThumbnail()"></div>
+                                </div>
+                              </div>
+
+                          <% else %>
+                              <div class="img-user-thumbnail" style="background-image: url(<%= image %>)"></div>
+                          <% end %>
+
+                          <div class="player-info-name"><%= name %></div>
+                        </div>
+                      </div>
+
+                      <!-- Player 4 -->
+                      <div class="col-sm-6">
+                        <div class="player-info">
+                          <% name = "" %>
+                          <% image = instance_url + "/assets/img_thumbnail_0.png" %>
+                          <% user = users[3].nil? ? nil : User.find(users[3]) %>
+                          <% if ! user.nil? %>
+                              <% name = user[:name] %>
+
+                              <% if ! user[:image].nil? && user[:image].length > 0 %>
+                                  <% image = user[:image] %>
+                              <% end %>
+                          <% end %>
+
+                          <% if ! user.nil? && current_user[:id].to_s == user.id.to_s %>
+                              <div class="image-with-selection">
+                                <img id="img-thumbnail" class="img-user-thumbnail" src=<%= image %> />
+                                <div id="image-selection-arrow-container">
+                                  <div id="image-selection-arrow" onclick="nextThumbnail()"></div>
+                                </div>
+                              </div>
+
+                          <% else %>
+                              <div class="img-user-thumbnail" style="background-image: url(<%= image %>)"></div>
+                          <% end %>
+
+                          <div class="player-info-name"><%= name %></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- End players thumbnails -->
+            </div>
+          </div>
+          <!-- End Game info and players' thumbnails -->
+
+          <!-- Map selection -->
+          <div class="row">
+            <div id="map-selection-container">
+              <div class="gr-title">
+                MAPS
+              </div>
+
+              <hr/>
+
+              <div id="map-content">
+                <div class="container-fluid">
+
+                  <% i = 0 %>
+                  <% while i < map_paths.length %>
+
+                    <!-- Add new row -->
+                    <div class="row">
+                      <% j = i %>
+                      <% while j < map_paths.length %>
+                        <% selected_map_call = "selectedMap(" + j.to_s + ")" %>
+                        <div class="map-image-button-container col-sm-3">
+                          <label>
+                            <input class="map-image-button" type="radio" name="maps" value="<%= j %>"
+                              <%= current_user[:id].to_s == host[:id].to_s ? "" : "disabled" %>
+                              <%= current_user[:id].to_s == host[:id].to_s ? "onclick=" + selected_map_call : "" %>
+                            />
+
+                            <img class="img-responsive <%= current_user[:id].to_s == host[:id].to_s ? "" : "disable-hover" %> <%= @gamelobby[:selected_map] == j ?  "checked-map" : "" %>"
+                              src="<%= instance_url + map_paths[j] %>" >
+                          </label>
+                        </div>
+
+                        <% j = j + 1 %>
+                      <% end %>
+                    </div>
+
+                    <% i = i + 4 %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Map selection -->
+        </div>
+      </div>
+    </div>
+
+    <div id="gr-content-footer">
+      <button class="btn btn-gl-custom btn-gl-cancel" onclick="leaveGameLobby(<%= @gamelobby.id %>, true)">LEAVE</button>
+
+      <!-- Only the host can start the game -->
+      <% users = @gamelobby[:user_list] %>
+      <% if current_user[:id].to_s == host[:id].to_s %>
+        <button class="btn btn-gl-custom" onclick="startGame(<%= @gamelobby.id %>)">START GAME</button>
+      <% else %>
+        <button class="btn btn-gl-custom disabled">START GAME</button>
+      <% end %>
+    </div>
+  </div>
+
+  <div id="loading-screen"></div>
+
+</div>
+
+</body>
+

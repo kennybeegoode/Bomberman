@@ -1,0 +1,123 @@
+<link href='https://fonts.googleapis.com/css?family=Righteous' rel='stylesheet' type='text/css'>
+
+<body onLoad="preloadImages()">
+
+<div id="gl-wrapper">
+
+  <!-- Main Container -->
+  <div id="gl-main-container">
+
+    <!-- Header -->
+    <div id="gl-header">
+      <nav class="navbar navbar-inverse navbar-fixed-top">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header" id="gl-header-small">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#gl-header-menu-buttons" aria-expanded="false">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        </div>
+
+        <!-- Collect the nav links and other content for toggling -->
+        <div class="collapse navbar-collapse" id="gl-header-menu-buttons" aria-expanded="false">
+          <div class="gl-header-inner-nav">
+            <ul class="nav navbar-nav navbar-right">
+              <li>
+                <a href="/about.html">ABOUT US</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </div>
+    <!-- End Header -->
+
+    <div id="main-container">
+      <div id="main-form-container">
+        <div class="form-container">
+          <div class="form-title">
+            <h3>BOMBERMAN SIGN UP</h3>
+          </div>
+
+          <hr/>
+
+          <!-- Start of Form Content-->
+          <div class="form-content">
+            <%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
+                <div id="image-with-name-and-email">
+
+                  <div class="left-div">
+                    <div class="form-group hidden-field">
+                      <%= f.label :image, :class => "hidden-field" %><br />
+                      <%= f.text_field :image, :class => "hidden-field", :id => "image-path" %>
+                    </div>
+
+                    <div class="form-label">Avatar</div>
+                    <img id="img-thumbnail" class="img-user-thumbnail" src=<%= instance_url + "/assets/img_thumbnail_0.png" %> />
+                    <div id="image-selection-arrow-container">
+                      <div id="image-selection-arrow" onclick="btnClicked()"></div>
+                    </div>
+                  </div>
+
+                  <div class="right-div">
+                    <div class="form-group">
+                      <%= f.label :name, :class => "form-label" %><br />
+                      <%= f.text_field :name, autofocus: true, :class => "form-control" %>
+                    </div>
+
+                    <div class="form-group">
+                      <%= f.label :email, :class => "form-label" %><br />
+                      <%= f.email_field :email, :class => "form-control"%>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <%= f.label :password, :class => "form-label" %>
+                  <% if @minimum_password_length %>
+                      <em class="form-label">(<%= @minimum_password_length %> characters minimum)</em>
+                  <% end %><br />
+                  <%= f.password_field :password, autocomplete: "off", :class => "form-control" %>
+                </div>
+
+                <div class="form-group">
+                  <%= f.label :password_confirmation, :class => "form-label" %><br />
+                  <%= f.password_field :password_confirmation, autocomplete: "off", :class => "form-control" %>
+                </div>
+
+                <div class="form-group">
+                  <div class="actions">
+                    <a href="/users/sign_in" class="btn btn-gl-custom btn-gl-cancel">LOGIN</a>
+
+                    <div style="float: right">
+                      <%= f.submit "SIGN UP", :class => "btn btn-gl-custom login-style" %>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="custom-hr">
+                  <span>
+                    <img src="/assets/anim_bomb_icon.gif"/>
+                  </span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="facebook-login">
+                    <a class="btn btn-primary" href="/users/auth/facebook">
+                      <img src="/assets/img_facebook_logo.png"/>
+                      LOGIN WITH FACEBOOK
+                    </a>
+                  </div>
+                </div>
+            <% end %>
+          </div>
+          <!-- End of Form Content -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
